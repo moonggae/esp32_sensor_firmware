@@ -1,9 +1,8 @@
 """ sensor_logger.py """
 from machine import Pin, I2C
 from bme import BME280
-import config
 import file_utils
-    
+
 class SensorLogger:
     """Class to handle temperature, humidity, and material resistivity logging."""
     # ------------------------- Initialization -------------------------
@@ -13,7 +12,7 @@ class SensorLogger:
         self.sensor = BME280(i2c=self.i2c)
         
         # Load existing data
-        file_utils.create_file_if_not_exists(config.DATA_FILE, config.DATA_HEADER)
+        file_utils.create_file_if_not_exists()
 
     # ------------------------- Sensor Reading Methods -------------------------
     def get_sensor_data(self, current_time):
@@ -22,7 +21,7 @@ class SensorLogger:
             temperature, humidity = self.sensor.values
 
             new_record = [current_time, temperature, humidity]
-            file_utils.append_to_file(config.DATA_FILE, new_record)
+            file_utils.append_to_file(new_record)
             print(f"Logged data: {new_record}")
             return temperature, humidity
         except Exception as e:

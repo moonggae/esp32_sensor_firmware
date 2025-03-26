@@ -6,12 +6,12 @@ ESP32 기반 BLE 센서 로거로, 온습도 데이터를 측정하고 BLE를 �
 ## 프로젝트 구조
 | 디렉토리/파일 | 설명 |
 |--------------|--------------------------------------------------|
+| `lib\` | 라이브러리 폴더 (aioble, bme280) |
 | `boot.py` | 시스템 초기화 및 메인 실행 흐름 관리 |
 | `rtc_manager.py` | RTC(Real-Time Clock) 관리 및 Deep Sleep 스케줄링 |
 | `aioble_manager.py` | BLE 통신 및 GATT 서비스 관리 |
 | `sensor_logger.py` | BME280 센서 데이터 측정 및 CSV 파일 저장 |
 | `file_utils.py` | 파일 입출력 관련 유틸리티 함수 제공 |
-| `config.py` | 설정값 (BLE 간격, 데이터 파일명 등) 정의 |
 
 ## 주요 기능
 | 기능 | 설명 |
@@ -29,18 +29,7 @@ ESP32 기반 BLE 센서 로거로, 온습도 데이터를 측정하고 BLE를 �
 4. 등록 후 RTC 시간 동기화 및 센서 데이터 측정
 5. 측정된 데이터 BLE를 통해 전송
 6. 지정된 주기 후 Deep Sleep 모드 진입
-7. Wake-up 후 다시 센서 데이터 측정 및 전송 반복
-
-## 설정 파일 (`config.py` 예시)
-```python
-DEVICE_NAME = "ESP32_Sensor"
-REGISTER_MAC_FILE = "registered_mac.txt"
-NAME_FILE = "device_name.txt"
-DATA_FILE = "sensor_data.csv"
-DATA_HEADER = ["t", "tp", "hd"]
-ADV_INTERVAL_MS = 250000  # BLE 광고 간격
-BLE_CHUNK_SIZE = 10  # BLE 데이터 전송 시 배치 크기
-```
+7. Wake-up 후 다시 센서 데이터 측정
 
 ## 설치 및 실행
 1. ESP32에 Micropython 펌웨어 설치
