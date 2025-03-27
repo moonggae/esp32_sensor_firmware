@@ -12,7 +12,7 @@ class SensorLogger:
         self.sensor = BME280(i2c=self.i2c)
         
         # Load existing data
-        file_utils.create_file_if_not_exists()
+        file_utils.create_csv_file()
 
     # ------------------------- Sensor Reading Methods -------------------------
     def get_sensor_data(self, current_time):
@@ -21,7 +21,7 @@ class SensorLogger:
             temperature, humidity = self.sensor.values
 
             new_record = [current_time, temperature, humidity]
-            file_utils.append_to_file(new_record)
+            file_utils.append_csv_file(new_record)
             print(f"Logged data: {new_record}")
             return temperature, humidity
         except Exception as e:

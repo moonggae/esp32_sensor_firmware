@@ -12,6 +12,8 @@ class RTCManager:
         self.period = None
         self._load_rtc_memory()
 
+
+    # ------------------------- rtc memory -------------------------
     def _load_rtc_memory(self):
         """Load latest time & period from RTC memory"""
         try:
@@ -44,6 +46,7 @@ class RTCManager:
         except Exception as e:
             print(f"❌ RTC Memory Save Error: {e}")
 
+    # ------------------------- set rtc -------------------------
     def set_rtc_datetime(self, epoch_time):
         """Set RTC time using epoch (Time Sync)"""
         try:
@@ -62,6 +65,7 @@ class RTCManager:
         dt = self.rtc.datetime()
         return time.mktime((dt[0], dt[1], dt[2], dt[4], dt[5], dt[6], 0, 0))
 
+    # ------------------------- check rtc time -------------------------
     def is_sensor_time(self):
         """Check if it's time to perform sensor measurement."""
         if self.latest_time is None or self.period is None:
@@ -79,6 +83,7 @@ class RTCManager:
         current_epoch = self._current_epoch()
         return current_epoch < (self.latest_time + self.period)
 
+    # ------------------------- deep sleep -------------------------
     def calculate_sleep_duration(self):
         """Calculate how long the ESP32 should stay in deep sleep (based on epoch time)"""
         dt = self.rtc.datetime()
@@ -97,7 +102,6 @@ class RTCManager:
         else:
             print(f"🛌 sensor period < Deep sleep period → {remaining_ms // 1000}sec")
             return remaining_ms
-
 
     def enter_deep_sleep(self):
         """Enter deep sleep mode for the required duration"""

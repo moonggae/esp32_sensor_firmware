@@ -6,7 +6,7 @@ _DATA_HEADER = ["t", "tp", "hd"]
 
 # ------------------------- CSV File Operations -------------------------
 
-def create_file_if_not_exists():
+def create_csv_file():
     """Check if the file exists; if not, create it and add headers."""
     try:
         uos.stat(_DATA_FILE)  # Check if the file exists
@@ -15,7 +15,7 @@ def create_file_if_not_exists():
             file.write(",".join(_DATA_HEADER) + "\n")  # Add headers
         print(f"Created new file: {_DATA_FILE}")
 
-def append_to_file(record):
+def append_csv_file(record):
     """Append new data to the CSV file."""
     try:
         with open(_DATA_FILE, "a") as file:
@@ -36,7 +36,7 @@ def read_csv_file():
         print(f"[ERROR] Failed to load {_DATA_FILE}: {e}")
         return []
 
-def clear_data_file():
+def clear_csv_file():
     """Clear the file content while keeping the headers (if provided)."""
     try:
         with open(_DATA_FILE, "w") as file:

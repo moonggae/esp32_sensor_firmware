@@ -23,24 +23,18 @@ ESP32 기반 BLE 센서 로거로, 온습도 데이터를 측정하고 BLE를 �
 | Deep Sleep | 주기적으로 절전 모드에 진입 후 자동 Wake-up |
 
 ## 실행 흐름
-1. **ESP32 부팅 시** `boot.py` 실행
-2. `RTCManager` 및 `BLEManager` 초기화
-3. 기기 등록이 완료될 때까지 BLE 광고 수행
-4. 등록 후 RTC 시간 동기화 및 센서 데이터 측정
-5. 측정된 데이터 BLE를 통해 전송
-6. 지정된 주기 후 Deep Sleep 모드 진입
-7. Wake-up 후 다시 센서 데이터 측정
+1.	**전원 공급/재부팅 시**: boot.py 실행
+2.	BLE 광고 → 기기 등록 대기
+3.	등록 후 RTC 시간 동기화
+4.	센서 측정 및 BLE 전송
+5.	데이터 CSV 저장
+6.	Deep Sleep 진입
+7.	RTC 시간에 맞춰 Wake-up → 루프 반복
 
 ## 설치 및 실행
 1. ESP32에 Micropython 펌웨어 설치
 2. 프로젝트 파일 업로드
 3. ESP32 재부팅 후 BLE 연결 및 데이터 송수신 테스트
-
-## 참고
-- `machine.deepsleep`를 활용한 저전력 모드 구현
-- `aioble` 라이브러리를 사용하여 BLE GATT 서비스 구현
-- `machine.RTC`를 활용하여 Deep Sleep 후 시간 유지
-- `uos`를 활용한 CSV 데이터 관리
 
 ## License
 This project includes code from the Adafruit BME280 Python library and is licensed under the MIT License.

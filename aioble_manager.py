@@ -27,7 +27,7 @@ class BLEManager:
         self._setup_gatt_services()
         print(f"BLE GATT Server Started with name: {self._name}")
 
-    # ------------------------ [1. GATT Services and Advertising] ------------------------
+    # ------------------------ GATT Services and Advertising ------------------------
     def _setup_gatt_services(self):
         """Set up BLE GATT services and characteristics"""
         self.service = aioble.Service(_ENV_SERVICE_UUID)
@@ -91,13 +91,12 @@ class BLEManager:
         except asyncio.TimeoutError:
             print("No connection. Advertising timed out.")
 
-    # ------------------------ [2. BLE Data Transmission] ------------------------
+    # ------------------------ BLE Data Transmission ------------------------
     async def handle_ble(self, connection):
         """Handle BLE Read/Notify Requests"""
         try:
             while connection.is_connected():
                 try:
-                    # 둘 중 하나라도 데이터가 오면 처리
                     conn1, data1 = await asyncio.wait_for(self.device_setting_char.written(), 1)
                     if data1:
                         await self.process_device_settings(data1)
@@ -110,7 +109,7 @@ class BLEManager:
                         await self.send_data(data2)
                 except asyncio.TimeoutError:
                     pass
-                     
+        
         except Exception as e:
             print(f"BLE Error: {e}")
             self.connected_device = None
@@ -163,16 +162,14 @@ class BLEManager:
     
     def clear_sent_data(self):
         """Clear CSV file after sending"""
-        file_utils.clear_file()
+        file_utils.clear_csv_file()
         print("Sent data cleared, only header remains.")
 
-    # ------------------------ [3. BLE Settings Modification] ------------------------
+    # ------------------------ BLE Settings Modification ------------------------
     async def process_device_settings(self, data):
         """Process Write Requests (Device Settings Update)"""
         try:
             settings = json.loads(data.decode())
-
-            print(f"[PARSED JSON] {settings}")
 
             # Ensure required fields exist
             if not all(k in settings for k in ["timestamp", "period"]):
