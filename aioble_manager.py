@@ -7,7 +7,7 @@ import file_utils
 
 _ENV_SERVICE_UUID = bluetooth.UUID("5f97247b-4474-424c-a826-f8ec299b6937")
 _ENV_SETTING_UUID = bluetooth.UUID("5f97247b-4474-424c-a826-f8ec299b6938")
-_ENV_UPDATE_UUID = bluetooth.UUID("5f97247b-4474-424c-a826-f8ec299b6939")
+_ENV_TEMP_UUID = bluetooth.UUID("5f97247b-4474-424c-a826-f8ec299b6939")
 
 _ADV_INTERVAL_US = 1_000_000 # 1sec
 _ADV_DURATION_MS = 30 * 1000 # 30sec
@@ -38,18 +38,17 @@ class BLEManager:
             _ENV_SETTING_UUID,
             max_len=64,  
             write=True,
-            capture = True,
+            capture=True,
         )
 
         # Temperature and humidity data service (Write & Notify)
         self.temp_humidity_char = aioble.BufferedCharacteristic(
             self.service,
-            _ENV_UPDATE_UUID,
+            _ENV_TEMP_UUID,
             max_len=64,
-            indicate=True,
             write=True,
-            notify = True,
-            capture = True,
+            notify=True,
+            capture=True,
         )
 
         # Register GATT services
@@ -57,7 +56,7 @@ class BLEManager:
     
     async def advertise_for_setting(self):
         """Start BLE advertising (until registration and RTC sync are completed)"""
-        while not all([self.rtc_manager.latest_time, self.rtc_manager.period]):
+        while not all([self.rtc_manager.last_log_time, self.rtc_manager.log_period]):
             print("Advertising BLE device for registration or RTC sync...")
             connection = await aioble.advertise(
                 _ADV_INTERVAL_US,
@@ -99,14 +98,15 @@ class BLEManager:
                 try:
                     conn1, data1 = await asyncio.wait_for(self.device_setting_char.written(), 1)
                     if data1:
-                        await self.process_device_settings(data1)
+                        await self.process_settings(data1)
                 except asyncio.TimeoutError:
                     pass
 
                 try:
                     conn2, data2 = await asyncio.wait_for(self.temp_humidity_char.written(), 1)
                     if data2:
-                        await self.send_data(data2)
+                        await self.time_sync(data2)
+                        await self.send_data()
                 except asyncio.TimeoutError:
                     pass
         
@@ -114,25 +114,16 @@ class BLEManager:
             print(f"BLE Error: {e}")
             self.connected_device = None
 
-    async def send_data(self, data):
+    async def send_data(self):
         """Send CSV data in BLE_CHUNK_SIZE chunks"""
         try:
-            settings = json.loads(data.decode())
-            print(f"📥 Trigger Write Received: {settings}")
-
-            if "timestamp" in settings:
-                latest_time = int(settings["timestamp"])
-                self.rtc_manager.set_rtc_datetime(latest_time) # Time sync
-                print(f"⏰ RTC time updated via write trigger: {latest_time}")
-
             if not self.connected_device:
                 print("No connected device to send CSV data.")
                 return False
 
             structured_data = file_utils.read_csv_file()
-
             if not structured_data:
-                await self.connected_device.notify(self.temp_humidity_char, json.dumps({"data": []}))
+                await self.temp_humidity_char.write(json.dumps({"data": []}).encode('utf-8'), send_update = True)
                 print("No data to send, sent empty response.")
                 return True
 
@@ -141,50 +132,59 @@ class BLEManager:
 
             for i in range(0, len(structured_data), _BLE_CHUNK_SIZE):
                 batch_data = structured_data[i:i + _BLE_CHUNK_SIZE]
-                json_payload = json.dumps({"data": batch_data})
+                json_payload = json.dumps({"data": batch_data}).encode('utf-8') 
 
                 try:
-                    await self.temp_humidity_char.notify(self.connected_device, json_payload)
+                    self.temp_humidity_char.write(json_payload, send_update=True)
                     print(f"Sent batch {i // _BLE_CHUNK_SIZE + 1} / {total_batches}")
                 except Exception as e:
                     print(f"❌ BLE send error (batch {i // _BLE_CHUNK_SIZE + 1}): {e}")
                     return False
 
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.1)  
 
             print("CSV Data sent successfully.")
-            self.clear_sent_data()
+            file_utils.clear_csv_file()
+            print("Sent data cleared, only header remains.")
             return True
 
         except OSError as e:
             print(f"File error: {e}")
             return False
-    
-    def clear_sent_data(self):
-        """Clear CSV file after sending"""
-        file_utils.clear_csv_file()
-        print("Sent data cleared, only header remains.")
 
     # ------------------------ BLE Settings Modification ------------------------
-    async def process_device_settings(self, data):
+    async def process_settings(self, data):
         """Process Write Requests (Device Settings Update)"""
         try:
             settings = json.loads(data.decode())
 
             # Ensure required fields exist
-            if not all(k in settings for k in ["timestamp", "period"]):
+            if not all(k in settings for k in ["time", "period"]):
                 print("Missing required fields in device settings.")
                 return  # Stop processing if required values are missing
 
-            latest_time = int(settings["timestamp"])  # ex) "1711360200" epoch(sec)
+            latest_time = settings["time"]  # ex) "[2025, 3, 27, 15, 27, 56]" epoch(sec)
             period = int(settings["period"])   # ex) "3600" epoch(sec)
 
             # Save required values (RTC Memory & MAC Address)
-            self.rtc_manager.set_rtc_datetime(latest_time) 
-            self.rtc_manager.save_rtc_memory(latest_time, period) 
+            epoch_time = self.rtc_manager.set_rtc_datetime(latest_time) 
+            self.rtc_manager.save_rtc_memory(epoch_time, period, epoch_time) 
 
             print(f"Device settings updated: Time={latest_time}, Period={period}")
 
         except ValueError:
             print("JSON Parsing Error in Device Settings")
 
+    
+    async def time_sync(self, data):
+        """Time sync"""
+        try:
+            settings = json.loads(data.decode())
+            print(f"📥 Trigger Write Received: {settings}")
+
+            if "time" in settings:
+                latest_time = settings["time"]
+                self.rtc_manager.set_rtc_datetime(latest_time) # Time sync
+
+        except ValueError:
+            print("JSON Parsing Error in Time Sync")
