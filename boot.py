@@ -21,18 +21,17 @@ async def main():
     ble_manager = BLEManager(rtc_manager)
     sensor_logger = SensorLogger()
     
-    # ✅ RTC 데이터 손실 또는 등록이 안 된 경우, BLE 등록 광고 실행
-    if rtc_manager.latest_time is None or rtc_manager.period is None:
+    # RTC 데이터 손실 또는 등록이 안 된 경우, BLE 등록 광고 실행
+    if rtc_manager.last_log_time is None or rtc_manager.log_period is None:
         print("⚠️ RTC 설정값이 없습니다. 초기 등록을 시작합니다.")
         await ble_manager.advertise_for_setting()
-
+        
         current_time = rtc_manager.format_rtc_datetime()
         sensor_logger.get_sensor_data(current_time)
         rtc_manager.enter_deep_sleep()
         return 
     
     sensor_time = rtc_manager.is_sensor_time()
-    advertise_time = rtc_manager.is_advertise_time()
 
     if sensor_time:
         print("🔔 측정 시간입니다. 센서 데이터를 수집합니다.")
@@ -40,12 +39,17 @@ async def main():
         sensor_logger.get_sensor_data(current_time)
 
         # RTC 메모리 업데이트
-        latest_time = rtc_manager.latest_time + rtc_manager.period
-        rtc_manager.save_rtc_memory(latest_time, rtc_manager.period)
+        last_log_time = rtc_manager.current_epoch()
+        rtc_manager.save_rtc_memory(last_log_time, rtc_manager.log_period, rtc_manager.last_advertise_time)
+
+    advertise_time = rtc_manager.is_advertise_time()
 
     if advertise_time:
         print("📡 광고 시간입니다. BLE를 통해 데이터 전송 대기 중...")
         await ble_manager.advertise_for_wakeup()
+
+        last_advertise_time = rtc_manager.current_epoch()
+        rtc_manager.save_rtc_memory(advertise_time=last_advertise_time)
 
     # 마지막으로 Deep Sleep 진입
     rtc_manager.enter_deep_sleep()
