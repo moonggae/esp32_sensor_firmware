@@ -122,8 +122,7 @@ class BLEManager:
                 return False
 
             structured_data = file_utils.read_csv_file()
-            if not structured_data:
-                await self.temp_humidity_char.write(json.dumps({"data": []}).encode('utf-8'), send_update = True)
+            if structured_data is None or len(structured_data) == 0:
                 print("No data to send, sent empty response.")
                 return True
 
@@ -141,7 +140,7 @@ class BLEManager:
                     print(f"❌ BLE send error (batch {i // _BLE_CHUNK_SIZE + 1}): {e}")
                     return False
 
-                await asyncio.sleep(0.1)  
+                await asyncio.sleep(0.3)  
 
             print("CSV Data sent successfully.")
             file_utils.clear_csv_file()
