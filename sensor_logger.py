@@ -2,6 +2,7 @@
 from machine import Pin, I2C
 from bme import BME280
 import file_utils
+from material_sensor import MaterialSensor
 
 class SensorLogger:
     """Class to handle temperature, humidity, and material resistivity logging."""
@@ -10,6 +11,7 @@ class SensorLogger:
         # Initialize DHT20 (using I2C)
         self.i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=100000)
         self.sensor = BME280(i2c=self.i2c)
+        self.material_sensor = MaterialSensor(Pin(25))
         
         # Load existing data
         file_utils.create_csv_file()
@@ -19,8 +21,9 @@ class SensorLogger:
         """Read temperature & humidity from bme280 sensor."""
         try:
             temperature, humidity = self.sensor.values
+            material_resistivity = self.material_sensor.read()
 
-            new_record = [current_time, temperature, humidity]
+            new_record = [current_time, temperature, humidity, material_resistivity]
             file_utils.append_csv_file(new_record)
             print(f"Logged data: {new_record}")
             return temperature, humidity
