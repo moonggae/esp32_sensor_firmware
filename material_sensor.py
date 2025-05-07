@@ -6,5 +6,9 @@ class MaterialSensor:
         self.pin = pin
 
 
-    def read(self):
-        ADC(self.pin).read() * 3.3 / 4095
+    def read_votage(self):
+        return ADC(self.pin).read()
+
+    def read_resistance(self):
+        voltage = self.read_votage()
+        return (voltage * 1000) / (3.3 - voltage)

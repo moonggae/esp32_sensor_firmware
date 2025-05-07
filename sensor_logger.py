@@ -21,9 +21,9 @@ class SensorLogger:
         """Read temperature & humidity from bme280 sensor."""
         try:
             temperature, humidity = self.sensor.values
-            material_resistivity = self.material_sensor.read()
+            material_resistance = self.material_sensor.read_resistance()
 
-            new_record = [current_time, temperature, humidity, material_resistivity]
+            new_record = [current_time, temperature, humidity, str(material_resistance)]
             file_utils.append_csv_file(new_record)
             print(f"Logged data: {new_record}")
             return temperature, humidity
